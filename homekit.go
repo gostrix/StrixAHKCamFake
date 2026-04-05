@@ -499,10 +499,12 @@ func (c *hkConsumer) AddTrack(media *core.Media, codec *core.Codec, track *core.
 	switch codec.Name {
 	case core.CodecH264:
 		sender.Handler = h264.RTPPay(1378, sender.Handler)
+		// RepairAVCC ensures SPS/PPS are prepended before every IDR keyframe.
+		// Without this, decoders receiving the SRTP stream (or RTSP restream)
+		// won't be able to initialize until they see SPS/PPS inline.
+		sender.Handler = h264.RepairAVCC(track.Codec, sender.Handler)
 		if track.Codec.IsRTP() {
 			sender.Handler = h264.RTPDepay(track.Codec, sender.Handler)
-		} else {
-			sender.Handler = h264.RepairAVCC(track.Codec, sender.Handler)
 		}
 	case core.CodecOpus:
 		sender.Handler = opus.RepackToHAP(c.audioRTPTime, sender.Handler)
