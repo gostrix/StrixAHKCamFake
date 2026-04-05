@@ -64,7 +64,7 @@ func printInfo(cfg *Config) {
 	fmt.Println()
 	fmt.Printf("  HomeKit camera:  %s\n", cfg.CameraName)
 	fmt.Printf("  PIN:             %s\n", formatPin(cfg.Pin))
-	fmt.Printf("  HAP port:        %s\n", cfg.HAPPort)
+	fmt.Printf("  HAP port:        %s (from mDNS)\n", cfg.HAPPort)
 	fmt.Printf("  SRTP port:       %s\n", cfg.SRTPPort)
 	fmt.Println()
 	fmt.Println("  Open Apple Home app -> Add Accessory -> enter PIN above")

@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -62,10 +61,12 @@ func startHomeKit(cfg *Config, stream *Stream, snap *Snapshot) {
 		GetClientPublic: srv.GetPair,
 	}
 
-	hapPort, err := strconv.Atoi(cfg.HAPPort)
+	// listen first, then use the real port for mDNS (supports port 0 = random)
+	ln, err := net.Listen("tcp", ":"+cfg.HAPPort)
 	if err != nil {
-		log.Fatal().Err(err).Msg("[homekit] invalid HAP port")
+		log.Fatal().Err(err).Msg("[homekit] HAP listen failed")
 	}
+	hapPort := ln.Addr().(*net.TCPAddr).Port
 
 	entry := &mdns.ServiceEntry{
 		Name: name,
@@ -94,11 +95,6 @@ func startHomeKit(cfg *Config, stream *Stream, snap *Snapshot) {
 		srv.handleHAP(w, r)
 	})
 
-	ln, err := net.Listen("tcp", ":"+cfg.HAPPort)
-	if err != nil {
-		log.Fatal().Err(err).Msg("[homekit] HAP listen failed")
-	}
-
 	httpServer := &http.Server{
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -110,7 +106,7 @@ func startHomeKit(cfg *Config, stream *Stream, snap *Snapshot) {
 		}
 	}()
 
-	log.Info().Str("addr", ":"+cfg.HAPPort).Str("device_id", deviceID).Msg("[homekit] HAP server listening")
+	log.Info().Int("port", hapPort).Str("device_id", deviceID).Msg("[homekit] HAP server listening")
 
 	// start mDNS advertisement
 	go func() {
